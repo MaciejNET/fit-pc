@@ -117,6 +117,20 @@ export default function ComponentSelector({
             }
         }
 
+        // CPU Cooler -> Motherboard/CPU: check socket compatibility
+        if (currentStep.category === "CPU_COOLER") {
+            // Get socket from motherboard or CPU
+            const socket = buildState.motherboard?.technical_specs?.socket 
+                || buildState.cpu?.technical_specs?.socket;
+            const supportedSockets = product.technical_specs?.supported_sockets;
+            
+            if (socket && supportedSockets && Array.isArray(supportedSockets)) {
+                if (!supportedSockets.includes(socket)) {
+                    return { compatible: false, reason: `Cooler doesn't support ${socket} socket` };
+                }
+            }
+        }
+
         // CPU Cooler -> Case: check height
         if (currentStep.category === "CPU_COOLER" && buildState.case) {
             const maxCoolerHeight = buildState.case.technical_specs?.max_cpu_cooler_height_mm;

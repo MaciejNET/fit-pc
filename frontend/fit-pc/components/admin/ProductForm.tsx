@@ -336,13 +336,23 @@ export default function ProductForm({ initialData }: ProductFormProps) {
                         <>
                             <Field>
                                 <FieldLabel>Supported Sockets (comma-separated)</FieldLabel>
-                                <Input
-                                    {...register("technical_specs.supported_sockets")}
-                                    placeholder="e.g. AM4, AM5, LGA1700"
-                                    onChange={(e) => {
-                                        const socketsArray = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                                        form.setValue("technical_specs.supported_sockets", socketsArray as any);
-                                    }}
+                                <Controller
+                                    control={control}
+                                    name="technical_specs.supported_sockets"
+                                    render={({ field }) => (
+                                        <Input
+                                            placeholder="e.g. AM4, AM5, LGA1700"
+                                            value={Array.isArray(field.value) ? field.value.join(', ') : (field.value || '')}
+                                            onChange={(e) => {
+                                                const socketsArray = e.target.value
+                                                    .split(',')
+                                                    .map(s => s.trim())
+                                                    .filter(Boolean);
+                                                field.onChange(socketsArray);
+                                            }}
+                                            onBlur={field.onBlur}
+                                        />
+                                    )}
                                 />
                                 <FieldError errors={(errors as any).technical_specs?.supported_sockets ? [(errors as any).technical_specs?.supported_sockets] : []} />
                             </Field>

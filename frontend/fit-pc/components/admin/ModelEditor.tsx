@@ -173,7 +173,6 @@ function AnchorMarker({
                     object={groupRef.current}
                     mode={transformMode}
                     size={0.5}
-                    onMouseDown={(e) => e.stopPropagation()}
                 />
             )}
         </>
