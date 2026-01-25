@@ -9,7 +9,8 @@ import { Check, ChevronRight, Save, FolderOpen } from "lucide-react";
 import ComponentSelector from "@/components/builder/ComponentSelector";
 import BuilderCanvas from "@/components/builder/BuilderCanvas";
 import SaveBuildDialog from "@/components/builder/SaveBuildDialog";
-import LoadBuildDialog from "@/components/builder/LoadBuildDialog";
+import LoadBuildPanel from "@/components/builder/LoadBuildPanel";
+import ExportPDFButton from "@/components/builder/ExportPDFButton";
 
 // Build steps in order
 export const BUILD_STEPS = [
@@ -48,7 +49,7 @@ export default function BuilderView() {
 
     // Save/Load state
     const [saveDialogOpen, setSaveDialogOpen] = useState(false);
-    const [loadDialogOpen, setLoadDialogOpen] = useState(false);
+    const [showLoadPanel, setShowLoadPanel] = useState(false);
     const [currentBuildId, setCurrentBuildId] = useState<number | null>(null);
     const [currentBuildName, setCurrentBuildName] = useState<string | null>(null);
 
@@ -118,6 +119,7 @@ export default function BuilderView() {
         setCurrentBuildId(buildId);
         setCurrentBuildName(buildName);
         setCurrentStepIndex(0);
+        setShowLoadPanel(false); // Close the load panel after loading
     };
 
     const handleSaveSuccess = (buildId: number, buildName: string) => {
@@ -151,114 +153,131 @@ export default function BuilderView() {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr_400px] gap-4 h-[calc(100vh-120px)]">
-            {/* Left Sidebar - Build Steps */}
-            <div className="space-y-4 overflow-auto">
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">Build Progress</CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                            {completedCount} of {BUILD_STEPS.length} components
-                        </p>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        {BUILD_STEPS.map((step, index) => {
-                            const isComplete = isStepComplete(step.id);
-                            const isCurrent = index === currentStepIndex;
-                            const component = buildState[step.id];
+            {/* Left Sidebar - Build Steps or Load Panel */}
+            {showLoadPanel ? (
+                <LoadBuildPanel
+                    onLoadBuild={handleLoadBuild}
+                    onBack={() => setShowLoadPanel(false)}
+                />
+            ) : (
+                <div className="space-y-4 overflow-auto">
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-lg">Build Progress</CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                {completedCount} of {BUILD_STEPS.length} components
+                            </p>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                            {BUILD_STEPS.map((step, index) => {
+                                const isComplete = isStepComplete(step.id);
+                                const isCurrent = index === currentStepIndex;
+                                const component = buildState[step.id];
 
-                            return (
-                                <button
-                                    key={step.id}
-                                    onClick={() => setCurrentStepIndex(index)}
-                                    className={`w-full text-left p-3 rounded-lg border transition-colors ${isCurrent
-                                        ? "border-primary bg-primary/10"
-                                        : "border-border hover:bg-muted"
-                                        }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div
-                                            className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs ${isComplete
-                                                ? "bg-green-500 text-white"
-                                                : isCurrent
-                                                    ? "bg-primary text-primary-foreground"
-                                                    : "bg-muted text-muted-foreground"
-                                                }`}
-                                        >
-                                            {isComplete ? (
-                                                <Check className="w-4 h-4" />
-                                            ) : (
-                                                <span>{index + 1}</span>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-medium text-sm">{step.label}</p>
-                                            {component && (
-                                                <p className="text-xs text-muted-foreground truncate">
-                                                    {component.name}
-                                                </p>
-                                            )}
-                                        </div>
-                                        {!step.required && (
-                                            <Badge variant="outline" className="text-xs">
-                                                Optional
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg">Total Price</CardTitle>
-                            {currentBuildName && (
-                                <Badge variant="secondary" className="text-xs">
-                                    {currentBuildName}
-                                </Badge>
-                            )}
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <p className="text-3xl font-bold">
-                            ${totalPrice.toFixed(2)}
-                        </p>
-
-                        {isSignedIn && (
-                            <div className="flex flex-col gap-2">
-                                <Button
-                                    onClick={() => setSaveDialogOpen(true)}
-                                    disabled={completedCount === 0}
-                                    className="w-full"
-                                >
-                                    <Save className="w-4 h-4 mr-2" />
-                                    {currentBuildId ? "Save Build" : "Save New Build"}
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setLoadDialogOpen(true)}
-                                    className="w-full"
-                                >
-                                    <FolderOpen className="w-4 h-4 mr-2" />
-                                    Load Build
-                                </Button>
-                                {currentBuildId && (
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={handleNewBuild}
-                                        className="w-full text-muted-foreground"
+                                return (
+                                    <button
+                                        key={step.id}
+                                        onClick={() => setCurrentStepIndex(index)}
+                                        className={`w-full text-left p-3 rounded-lg border transition-colors ${isCurrent
+                                            ? "border-primary bg-primary/10"
+                                            : "border-border hover:bg-muted"
+                                            }`}
                                     >
-                                        Start New Build
-                                    </Button>
+                                        <div className="flex items-center gap-3">
+                                            <div
+                                                className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs ${isComplete
+                                                    ? "bg-green-500 text-white"
+                                                    : isCurrent
+                                                        ? "bg-primary text-primary-foreground"
+                                                        : "bg-muted text-muted-foreground"
+                                                    }`}
+                                            >
+                                                {isComplete ? (
+                                                    <Check className="w-4 h-4" />
+                                                ) : (
+                                                    <span>{index + 1}</span>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-sm">{step.label}</p>
+                                                {component && (
+                                                    <p className="text-xs text-muted-foreground truncate">
+                                                        {component.name}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            {!step.required && (
+                                                <Badge variant="outline" className="text-xs">
+                                                    Optional
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-lg">Total Price</CardTitle>
+                                {currentBuildName && (
+                                    <Badge variant="secondary" className="text-xs">
+                                        {currentBuildName}
+                                    </Badge>
                                 )}
                             </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className="text-3xl font-bold">
+                                ${totalPrice.toFixed(2)}
+                            </p>
+
+                            {isSignedIn && (
+                                <div className="flex flex-col gap-2">
+                                    <Button
+                                        onClick={() => setSaveDialogOpen(true)}
+                                        disabled={completedCount === 0}
+                                        className="w-full"
+                                    >
+                                        <Save className="w-4 h-4 mr-2" />
+                                        {currentBuildId ? "Save Build" : "Save New Build"}
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setShowLoadPanel(true)}
+                                        className="w-full"
+                                    >
+                                        <FolderOpen className="w-4 h-4 mr-2" />
+                                        Load Build
+                                    </Button>
+                                    {currentBuildId && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleNewBuild}
+                                            className="w-full text-muted-foreground"
+                                        >
+                                            Start New Build
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* PDF Export - available for everyone */}
+                            <ExportPDFButton
+                                components={Object.values(buildState).filter(
+                                    (c): c is NonNullable<typeof c> => c !== null
+                                )}
+                                totalPrice={totalPrice}
+                                buildName={currentBuildName}
+                                disabled={completedCount === 0}
+                            />
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             {/* Center - 3D View */}
             <Card className="flex flex-col overflow-hidden">
@@ -317,11 +336,6 @@ export default function BuilderView() {
                 currentBuildId={currentBuildId}
                 currentBuildName={currentBuildName}
                 onSaveSuccess={handleSaveSuccess}
-            />
-            <LoadBuildDialog
-                open={loadDialogOpen}
-                onOpenChange={setLoadDialogOpen}
-                onLoadBuild={handleLoadBuild}
             />
         </div>
     );
